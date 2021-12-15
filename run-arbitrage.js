@@ -83,7 +83,7 @@ const init = async () => {
       //let data = "Learning how to write in a file."
         
       // Write data in 'Output.txt' .
-      fs.appendFileSync('Output.txt', block.number + " : " + price_diff + " % \n");
+      fs.appendFileSync('Output.txt', block.number + " : " + price_diff  + " % "+ minimum_price / (10 ** 18) + " \n"  );
       // fs.writeFile('Output.txt', price_diff + " , ", (err) => {
             
       //     // In case of a error throw err.
