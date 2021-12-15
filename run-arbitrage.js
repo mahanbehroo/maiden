@@ -68,8 +68,8 @@ const init = async () => {
         } else if (price_diff >= 1.5 && price_diff < 2.2) {factor = 0.15;
           } else if (price_diff >= 2.2 && price_diff < 2.9) {factor = 0.4;
             } else if (price_diff >= 2.9 && price_diff < 3.5) {factor = 0.6;
-              } else if (price_diff >= 3.5 && price_diff < 4) {factor = 0.7;
-                } else if (price_diff >= 4 && price_diff < 4.5) {factor = 0.75;
+              } else if (price_diff >= 3.5 && price_diff < 3.9) {factor = 0.7;
+                } else if (price_diff >= 3.9 && price_diff < 4.5) {factor = 0.75;
                   } else if (price_diff >= 4.5 && price_diff < 5) {factor = 0.9;
                     } else {factor = 1;}
 
