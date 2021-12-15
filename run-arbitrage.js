@@ -63,15 +63,15 @@ const init = async () => {
 
       //---------------------------------- Calculating factor -------------------//
       let factor;
-      if (price_diff >= 0 && price_diff < 0.85) {factor = 0.01
-      } else if (price_diff >= 0.85 && price_diff < 1.5) {factor = 0.1;
+      if (price_diff >= 0 && price_diff < 1) {factor = 0.01
+      } else if (price_diff >= 0.1 && price_diff < 1.5) {factor = 0.1;
         } else if (price_diff >= 1.5 && price_diff < 2.2) {factor = 0.15;
-          } else if (price_diff >= 2.2 && price_diff < 2.9) {factor = 0.18;
-            } else if (price_diff >= 2.9 && price_diff < 3.5) {factor = 0.2;
-              } else if (price_diff >= 3.5 && price_diff < 4) {factor = 0.25;
-                } else if (price_diff >= 4 && price_diff < 5) {factor = 0.3;
-                  } else if (price_diff >= 5 && price_diff < 6) {factor = 0.4;
-                    } else {factor = 0.5;}
+          } else if (price_diff >= 2.2 && price_diff < 2.9) {factor = 0.4;
+            } else if (price_diff >= 2.9 && price_diff < 3.5) {factor = 0.6;
+              } else if (price_diff >= 3.5 && price_diff < 4) {factor = 0.7;
+                } else if (price_diff >= 4 && price_diff < 4.5) {factor = 0.75;
+                  } else if (price_diff >= 4.5 && price_diff < 5) {factor = 0.9;
+                    } else {factor = 1;}
 
       console.log(` Factor = ${factor} %`);
 
