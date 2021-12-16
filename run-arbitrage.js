@@ -35,13 +35,13 @@ const init = async () => {
   //   Flashloan.networks[networkId].address
   // );
   
-  // let ethPrice;
-  // const updateEthPrice = async () => {
-  //   const results = await uniswap.methods.getAmountsOut(web3.utils.toWei('1'), [addresses.tokens.weth, addresses.tokens.dai]).call();   //dai to wbnb pancakeswap
-  //   ethPrice = web3.utils.toBN('1').mul(web3.utils.toBN(results[1])).div(ONE_WEI);
-  // }
-  // await updateEthPrice();
-  // setInterval(updateEthPrice, 15000);
+  let ethPrice;
+  const updateEthPrice = async () => {
+    const results = await uniswap.methods.getAmountsOut(web3.utils.toWei('1'), [addresses.tokens.weth, addresses.tokens.dai]).call();   //dai to wbnb pancakeswap
+    ethPrice = web3.utils.toBN('1').mul(web3.utils.toBN(results[1])).div(ONE_WEI);
+  }
+  await updateEthPrice();
+  setInterval(updateEthPrice, 15000);
 
   web3.eth.subscribe('newBlockHeaders')
     .on('data', async block => {
@@ -133,66 +133,69 @@ const init = async () => {
       const daiFromUniswap = web3.utils.toBN(amountsOut2[1])
       const daiFromSushi = web3.utils.toBN(amountsOut4[1])
 
+      if ((daiFromUniswap.gt(AMOUNT_DAI_WEI)) || (daiFromSushi.gt(AMOUNT_DAI_WEI))) {
+        try {
+          if(daiFromUniswap.gt(AMOUNT_DAI_WEI)) {
+            const tx = flashloan.methods.initiateFlashloan(
+              addresses.dydx.solo, 
+              addresses.tokens.dai, 
+              AMOUNT_DAI_WEI,
+              DIRECTION.SUSHI_TO_UNISWAP
+            );
+            const [gasPrice, gasCost] = await Promise.all([
+              web3.eth.getGasPrice(),
+              tx.estimateGas({from: admin}),
+            ]);
 
-      if(daiFromUniswap.gt(AMOUNT_DAI_WEI)) {
-        const tx = flashloan.methods.initiateFlashloan(
-          addresses.dydx.solo, 
-          addresses.tokens.dai, 
-          AMOUNT_DAI_WEI,
-          DIRECTION.SUSHI_TO_UNISWAP
-        );
-        const [gasPrice, gasCost] = await Promise.all([
-          web3.eth.getGasPrice(),
-          tx.estimateGas({from: admin}),
-        ]);
+            const txCost = web3.utils.toBN(gasCost).mul(web3.utils.toBN(gasPrice)).mul(ethPrice);
+            const profit = daiFromUniswap.sub(AMOUNT_DAI_WEI).sub(txCost);
 
-        const txCost = web3.utils.toBN(gasCost).mul(web3.utils.toBN(gasPrice)).mul(ethPrice);
-        const profit = daiFromUniswap.sub(AMOUNT_DAI_WEI).sub(txCost);
+            if(profit > 0) {
+              console.log('Arb opportunity found Sushi -> Uniswap!');
+              console.log(`Expected profit: ${web3.utils.fromWei(profit)} Dai`);
+              const data = tx.encodeABI();
+              const txData = {
+                from: admin,
+                to: flashloan.options.address,
+                data,
+                gas: gasCost,
+                gasPrice
+              };
+              const receipt = await web3.eth.sendTransaction(txData);
+              console.log(`Transaction hash: ${receipt.transactionHash}`);
+            }
+          }
 
-        if(profit > 0) {
-          console.log('Arb opportunity found Sushi -> Uniswap!');
-          console.log(`Expected profit: ${web3.utils.fromWei(profit)} Dai`);
-          const data = tx.encodeABI();
-          const txData = {
-            from: admin,
-            to: flashloan.options.address,
-            data,
-            gas: gasCost,
-            gasPrice
-          };
-          const receipt = await web3.eth.sendTransaction(txData);
-          console.log(`Transaction hash: ${receipt.transactionHash}`);
-        }
-      }
+          if(daiFromSushi.gt(AMOUNT_DAI_WEI)) {
+            const tx = flashloan.methods.initiateFlashloan(
+              addresses.dydx.solo, 
+              addresses.tokens.dai, 
+              AMOUNT_DAI_WEI,
+              DIRECTION.UNISWAP_TO_SUSHI
+            );
+            const [gasPrice, gasCost] = await Promise.all([
+              web3.eth.getGasPrice(),
+              tx.estimateGas({from: admin}),
+            ]);
+            const txCost = web3.utils.toBN(gasCost).mul(web3.utils.toBN(gasPrice)).mul(ethPrice);
+            const profit = daiFromKyber.sub(AMOUNT_DAI_WEI).sub(txCost);
 
-      if(daiFromSushi.gt(AMOUNT_DAI_WEI)) {
-        const tx = flashloan.methods.initiateFlashloan(
-          addresses.dydx.solo, 
-          addresses.tokens.dai, 
-          AMOUNT_DAI_WEI,
-          DIRECTION.UNISWAP_TO_SUSHI
-        );
-        const [gasPrice, gasCost] = await Promise.all([
-          web3.eth.getGasPrice(),
-          tx.estimateGas({from: admin}),
-        ]);
-        const txCost = web3.utils.toBN(gasCost).mul(web3.utils.toBN(gasPrice)).mul(ethPrice);
-        const profit = daiFromKyber.sub(AMOUNT_DAI_WEI).sub(txCost);
-
-        if(profit > 0) {
-          console.log('Arb opportunity found Uniswap -> Sushi!');
-          console.log(`Expected profit: ${web3.utils.fromWei(profit)} Dai`);
-          const data = tx.encodeABI();
-          const txData = {
-            from: admin,
-            to: flashloan.options.address,
-            data,
-            gas: gasCost,
-            gasPrice
-          };
-          const receipt = await web3.eth.sendTransaction(txData);
-          console.log(`Transaction hash: ${receipt.transactionHash}`);
-        }
+            if(profit > 0) {
+              console.log('Arb opportunity found Uniswap -> Sushi!');
+              console.log(`Expected profit: ${web3.utils.fromWei(profit)} Dai`);
+              const data = tx.encodeABI();
+              const txData = {
+                from: admin,
+                to: flashloan.options.address,
+                data,
+                gas: gasCost,
+                gasPrice
+              };
+              const receipt = await web3.eth.sendTransaction(txData);
+              console.log(`Transaction hash: ${receipt.transactionHash}`);
+            }
+          }
+        } catch (error) {"are you sure flashloan contract is deployed?"}
       }
     })
     .on('error', error => {
